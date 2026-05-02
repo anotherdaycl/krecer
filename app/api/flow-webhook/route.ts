@@ -17,21 +17,33 @@ export async function POST(req: NextRequest) {
     // Consulta el estado del pago a Flow (esto actúa como verificación implícita)
     const payment = await getPaymentStatus(token);
 
+    console.log("Flow webhook payment:", JSON.stringify(payment));
+
     // Status 2 = pagado exitosamente
     if (payment.status === 2) {
       const supabase = createServerClient();
 
-      // Extrae userId del campo optional
+      // Intenta extraer userId desde optional primero, luego desde commerceOrder
       let userId = "";
       try {
-        const optional = JSON.parse(payment.optional || "{}");
-        userId = optional.userId || "";
-      } catch {
-        userId = payment.commerceOrder?.split("_")[1] || "";
+        const opt = typeof payment.optional === "string"
+          ? JSON.parse(payment.optional)
+          : payment.optional;
+        userId = opt?.userId || "";
+      } catch { /* ignorar */ }
+
+      // Fallback: decodificar UUID desde commerceOrder (formato "u<32hexchars>")
+      if (!userId || !UUID_REGEX.test(userId)) {
+        const raw = (payment.commerceOrder || "").replace(/^u/, "");
+        if (raw.length === 32) {
+          userId = `${raw.slice(0,8)}-${raw.slice(8,12)}-${raw.slice(12,16)}-${raw.slice(16,20)}-${raw.slice(20)}`;
+        }
       }
 
+      console.log("Flow webhook userId:", userId, "commerceOrder:", payment.commerceOrder);
+
       if (!userId || !UUID_REGEX.test(userId)) {
-        console.error("Flow webhook: userId inválido o ausente", { userId, flowOrder: payment.flowOrder });
+        console.error("Flow webhook: userId inválido", { userId, payment });
         return NextResponse.json({ error: "Invalid userId" }, { status: 400 });
       }
 

@@ -95,8 +95,8 @@ export async function createPayment(
   const appUrl = (baseUrl || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
   if (!appUrl) throw new Error("App URL not configured");
 
-  // Flow limita commerceOrder a 45 caracteres
-  const commerceOrder = `ord_${userId.slice(0, 8)}_${Date.now().toString().slice(-10)}`;
+  // Flow limita commerceOrder a 45 caracteres. Codificamos el UUID sin guiones (32 chars) + prefijo = 33 chars total
+  const commerceOrder = `u${userId.replace(/-/g, "")}`;
 
   const result = await flowPost("/payment/create", {
     commerceOrder,
