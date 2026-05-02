@@ -167,6 +167,20 @@ export default function ResultPage() {
                   {/* Watermark overlay for free users */}
                   {!isSubscribed && <div className="watermark" />}
 
+                  {/* Individual download button (subscribers only) */}
+                  {isSubscribed && (
+                    <a
+                      href={url}
+                      download={`post-imagen-${idx + 1}.jpg`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute top-2 right-2 w-8 h-8 bg-white/90 hover:bg-white rounded-lg flex items-center justify-center shadow opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    >
+                      <Download className="w-4 h-4 text-stone-700" />
+                    </a>
+                  )}
+
                   {/* Label */}
                   <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
                     <p className="text-white text-xs font-medium">
