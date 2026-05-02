@@ -2,18 +2,33 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateProductImages } from "@/lib/flux-api";
 import { generateCopy } from "@/lib/copy-templates";
 
+const VALID_CATEGORIES = ["ropa", "cosmetica", "accesorios", "comida", "otro"];
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const productName = formData.get("productName") as string;
-    const category = formData.get("category") as string;
 
-    if (!productName) {
+    const productNameRaw = formData.get("productName");
+    if (!productNameRaw || typeof productNameRaw !== "string" || !productNameRaw.trim()) {
       return NextResponse.json(
         { error: "Product name is required" },
         { status: 400 }
       );
     }
+    const productName = productNameRaw.trim();
+
+    const imageFile = formData.get("image");
+    if (!imageFile) {
+      return NextResponse.json(
+        { error: "Image is required" },
+        { status: 400 }
+      );
+    }
+
+    const categoryRaw = formData.get("category");
+    const category = (typeof categoryRaw === "string" && VALID_CATEGORIES.includes(categoryRaw))
+      ? categoryRaw
+      : "otro";
 
     // Generate images with Flux
     const imageUrls = await generateProductImages(productName, category);

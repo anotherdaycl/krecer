@@ -30,8 +30,14 @@ export default function ResultPage() {
   useEffect(() => {
     const stored = sessionStorage.getItem("generationResult");
     if (stored) {
-      const data = JSON.parse(stored);
-      setResult(data);
+      try {
+        const data = JSON.parse(stored);
+        if (!data.images || !data.copy) throw new Error("Datos incompletos");
+        setResult(data);
+      } catch (err) {
+        console.error("Error al leer resultado:", err);
+        window.location.href = "/";
+      }
     }
   }, []);
 
@@ -55,14 +61,20 @@ export default function ResultPage() {
     const zip = new JSZip();
 
     // Download images and add to zip
+    let failedCount = 0;
     for (let i = 0; i < result.images.length; i++) {
       try {
         const response = await fetch(result.images[i]);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const blob = await response.blob();
         zip.file(`post-imagen-${i + 1}.jpg`, blob);
       } catch (e) {
         console.error(`Failed to download image ${i}`, e);
+        failedCount++;
       }
+    }
+    if (failedCount > 0) {
+      alert(`No se pudieron descargar ${failedCount} imagen(es). El resto se incluirá en el ZIP.`);
     }
 
     // Add copy as text file

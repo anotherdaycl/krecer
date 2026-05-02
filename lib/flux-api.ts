@@ -1,8 +1,19 @@
 const FAL_API_KEY = process.env.FAL_API_KEY;
 const FAL_API_URL = "https://queue.fal.run/fal-ai/flux/schnell";
+const TIMEOUT_MS = 30000;
 
 interface FluxResult {
   images: { url: string; content_type: string }[];
+}
+
+async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function generateProductImages(
@@ -31,7 +42,7 @@ export async function generateProductImages(
 
   const results = await Promise.all(
     prompts.map(async (prompt) => {
-      const response = await fetch(FAL_API_URL, {
+      const response = await fetchWithTimeout(FAL_API_URL, {
         method: "POST",
         headers: {
           Authorization: `Key ${FAL_API_KEY}`,
@@ -52,7 +63,12 @@ export async function generateProductImages(
       }
 
       const data: FluxResult = await response.json();
-      return data.images[0]?.url || "";
+
+      if (!Array.isArray(data.images) || data.images.length === 0) {
+        throw new Error("Flux API returned no images");
+      }
+
+      return data.images[0].url;
     })
   );
 

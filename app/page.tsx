@@ -45,16 +45,24 @@ export default function HomePage() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Generation failed");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error((errData as { error?: string }).error || "Generation failed");
+      }
 
       const data = await res.json();
+
+      if (!data.images || !Array.isArray(data.images) || data.images.length === 0) {
+        throw new Error("Respuesta inválida del servidor");
+      }
 
       // Store result in sessionStorage and redirect
       sessionStorage.setItem("generationResult", JSON.stringify(data));
       window.location.href = "/result";
     } catch (err) {
       console.error(err);
-      alert("Error generando imágenes. Intenta de nuevo.");
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      alert(`Error generando imágenes: ${msg}. Intenta de nuevo.`);
     } finally {
       setLoading(false);
     }

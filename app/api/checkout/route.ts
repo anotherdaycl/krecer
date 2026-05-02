@@ -12,6 +12,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
+
     // Precio en CLP (aprox $10 USD)
     const amount = 8000;
 

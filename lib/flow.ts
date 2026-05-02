@@ -4,6 +4,7 @@ const FLOW_API_KEY = process.env.FLOW_API_KEY!;
 const FLOW_SECRET_KEY = process.env.FLOW_SECRET_KEY!;
 const FLOW_API_URL = "https://www.flow.cl/api";
 const FLOW_SANDBOX_URL = "https://sandbox.flow.cl/api";
+const TIMEOUT_MS = 30000;
 
 // Usa sandbox en desarrollo, producción en prod
 const BASE_URL =
@@ -26,19 +27,24 @@ function signParams(params: Record<string, string>): string {
     .digest("hex");
 }
 
-/**
- * Hace una llamada POST a la API de Flow
- */
+function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() =>
+    clearTimeout(timeoutId)
+  );
+}
+
 async function flowPost(
   endpoint: string,
   params: Record<string, string>
-): Promise<any> {
+): Promise<unknown> {
   const allParams = { ...params, apiKey: FLOW_API_KEY };
   const signature = signParams(allParams);
 
   const body = new URLSearchParams({ ...allParams, s: signature });
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
+  const response = await fetchWithTimeout(`${BASE_URL}${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
@@ -52,19 +58,16 @@ async function flowPost(
   return response.json();
 }
 
-/**
- * Hace una llamada GET a la API de Flow
- */
 async function flowGet(
   endpoint: string,
   params: Record<string, string>
-): Promise<any> {
+): Promise<unknown> {
   const allParams = { ...params, apiKey: FLOW_API_KEY };
   const signature = signParams(allParams);
 
   const queryParams = new URLSearchParams({ ...allParams, s: signature });
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `${BASE_URL}${endpoint}?${queryParams.toString()}`,
     { method: "GET" }
   );

@@ -10,9 +10,10 @@ import {
   Image,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
+import type { User } from "@supabase/supabase-js";
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [credits, setCredits] = useState(0);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -26,7 +27,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string; email?: string; user_metadata?: Record<string, string> } | null } }) => {
       if (!data.user) {
         window.location.href = "/login";
         return;
@@ -38,18 +39,45 @@ export default function DashboardPage() {
         .select("credits, status")
         .eq("user_id", data.user.id)
         .single()
-        .then(({ data: sub }) => {
+        .then(({ data: sub, error }: { data: { credits: number; status: string } | null; error: { code: string; message: string } | null }) => {
+          if (error && error.code !== "PGRST116") {
+            console.error("Error cargando créditos:", error);
+            return;
+          }
           if (sub && sub.status === "active") {
             setCredits(sub.credits);
           }
         });
     });
 
-    // Check if returning from successful payment
+    // Poll for credits after successful payment instead of arbitrary timeout
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success") {
-      // Reload credits after payment
-      setTimeout(() => window.location.reload(), 2000);
+      let attempts = 0;
+      const maxAttempts = 10;
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        const supabaseInner = createClient();
+        const { data: authData } = await supabaseInner.auth.getUser();
+        if (!authData.user) {
+          clearInterval(pollInterval);
+          return;
+        }
+        const { data: sub } = await supabaseInner
+          .from("subscriptions")
+          .select("credits, status")
+          .eq("user_id", authData.user.id)
+          .single();
+
+        if (sub && sub.status === "active" && sub.credits > 0) {
+          setCredits(sub.credits);
+          clearInterval(pollInterval);
+          // Clean the URL
+          window.history.replaceState({}, "", "/dashboard");
+        } else if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+        }
+      }, 2000);
     }
   }, []);
 
@@ -62,12 +90,12 @@ export default function DashboardPage() {
   }, []);
 
   const handleGenerate = async () => {
-    if (!file || !productName.trim() || credits <= 0) return;
+    if (!file || !productName.trim() || credits <= 0 || !user) return;
     setLoading(true);
 
     const formData = new FormData();
     formData.append("image", file);
-    formData.append("productName", productName);
+    formData.append("productName", productName.trim());
     formData.append("category", category);
 
     try {
@@ -76,30 +104,43 @@ export default function DashboardPage() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Generation failed");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Generation failed");
+      }
 
       const data = await res.json();
 
+      if (!data.images || !Array.isArray(data.images) || data.images.length === 0) {
+        throw new Error("Respuesta inválida del servidor");
+      }
+
       // Deduct credit
       const supabase = createClient();
-      await supabase
+      const { error: updateError } = await supabase
         .from("subscriptions")
         .update({ credits: credits - 1 })
         .eq("user_id", user.id);
 
-      setCredits((c) => c - 1);
+      if (updateError) {
+        console.error("Error actualizando créditos:", updateError);
+      }
+
+      setCredits((c: number) => c - 1);
 
       sessionStorage.setItem("generationResult", JSON.stringify(data));
       window.location.href = "/result";
     } catch (err) {
       console.error(err);
-      alert("Error generando. Intenta de nuevo.");
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      alert(`Error generando: ${msg}. Intenta de nuevo.`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSubscribe = async () => {
+    if (!user) return;
     setSubscribing(true);
     try {
       const res = await fetch("/api/checkout", {
@@ -110,8 +151,11 @@ export default function DashboardPage() {
           email: user.email,
         }),
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Checkout failed");
+      }
       const { url } = await res.json();
-      // Flow redirige al usuario a su página de pago
       window.location.href = url;
     } catch (err) {
       console.error(err);
@@ -165,7 +209,7 @@ export default function DashboardPage() {
 
       <div className="max-w-2xl mx-auto px-6 py-10">
         <h1 className="font-display font-bold text-2xl">
-          Hola, {user.user_metadata?.full_name?.split(" ")[0] || ""}
+          Hola, {user.user_metadata?.full_name?.split(" ")[0] || "Usuario"}
         </h1>
         <p className="text-stone-500 mt-1">
           {credits > 0
