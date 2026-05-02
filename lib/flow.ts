@@ -105,7 +105,7 @@ export async function createPayment(
     amount: String(amount),
     email,
     urlConfirmation: `${appUrl}/api/flow-webhook`,
-    urlReturn: `${appUrl}/dashboard?payment=success`,
+    urlReturn: `${appUrl}/api/flow-return`,
     optional: JSON.stringify({ userId }),
   }) as { url: string; token: string };
 
