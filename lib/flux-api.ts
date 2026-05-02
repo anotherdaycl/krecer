@@ -62,14 +62,14 @@ export async function generateProductImages(
         : "fashion model";
 
   const prompts = [
-    // Imagen 1: producto solo, fondo profesional, frontal
-    `Ultra high quality professional product photography of ${productName} for online store. ${background}. Product perfectly centered, sharp focus, crisp details, bright studio lighting with soft boxes, commercial e-commerce quality, no shadows, no blur, tack sharp, 8K resolution, photorealistic.`,
+    // Imagen 1: reemplazar fondo con fondo profesional para tienda
+    `Take this product image and replace the background with a ${background}. Keep the product exactly as it is, do not change the product itself. Make it look like a professional e-commerce product photo with bright studio lighting, sharp focus, commercial quality for an online store.`,
 
-    // Imagen 2: producto solo, fondo profesional, ángulo diferente
-    `Professional e-commerce photo of ${productName}, ${background}, three-quarter angle view or flat lay composition, ultra sharp focus, crisp textures, bright even lighting, high-end product photography for fashion online store, photorealistic, no blur, commercial quality.`,
+    // Imagen 2: otro ángulo o composición con fondo pro
+    `Take this product image and place it on a ${background}. Present it from a slightly different angle or as a flat lay. Keep the product identical, only change the background and lighting. Professional online store photography, ultra sharp, bright even lighting, high-end commercial quality.`,
 
     // Imagen 3: virtual try-on con modelo del género correcto
-    `Virtual try-on photo: ${modelDescriptor} wearing ${productName}, ${tryOnBackground}, full body shot, natural confident pose, sharp focus on both model and product, professional fashion photography, editorial quality, bright studio lighting, photorealistic, high resolution, the garment fits perfectly and is clearly visible.`,
+    `Using this product image as reference, create a virtual try-on photo showing a ${modelDescriptor} wearing this exact ${productName}. ${tryOnBackground}. Full body shot, natural confident pose, the garment must match exactly what is shown in the reference image. Professional fashion photography, sharp focus, studio lighting, photorealistic.`,
   ];
 
   const results = await Promise.all(
