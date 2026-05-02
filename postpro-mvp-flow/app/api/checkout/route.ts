@@ -1,0 +1,33 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createPayment } from "@/lib/flow";
+
+export async function POST(req: NextRequest) {
+  try {
+    const { userId, email } = await req.json();
+
+    if (!userId || !email) {
+      return NextResponse.json(
+        { error: "userId and email required" },
+        { status: 400 }
+      );
+    }
+
+    // Precio en CLP (aprox $10 USD)
+    const amount = 8000;
+
+    const { url } = await createPayment(
+      amount,
+      email,
+      userId,
+      "PostPro - 10 posts profesionales al mes"
+    );
+
+    return NextResponse.json({ url });
+  } catch (error) {
+    console.error("Flow checkout error:", error);
+    return NextResponse.json(
+      { error: "Failed to create payment" },
+      { status: 500 }
+    );
+  }
+}
