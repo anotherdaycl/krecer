@@ -87,8 +87,12 @@ export async function createPayment(
   amount: number,
   email: string,
   userId: string,
-  description: string = "PostPro - Suscripción mensual"
+  description: string = "PostPro - Suscripción mensual",
+  baseUrl?: string
 ): Promise<{ url: string; token: string }> {
+  const appUrl = (baseUrl || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+  if (!appUrl) throw new Error("App URL not configured");
+
   // Flow limita commerceOrder a 45 caracteres
   const commerceOrder = `ord_${userId.slice(0, 8)}_${Date.now().toString().slice(-10)}`;
 
@@ -98,8 +102,8 @@ export async function createPayment(
     currency: "CLP",
     amount: String(amount),
     email,
-    urlConfirmation: `${process.env.NEXT_PUBLIC_APP_URL}/api/flow-webhook`,
-    urlReturn: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?payment=success`,
+    urlConfirmation: `${appUrl}/api/flow-webhook`,
+    urlReturn: `${appUrl}/dashboard?payment=success`,
     optional: JSON.stringify({ userId }),
   }) as { url: string; token: string };
 

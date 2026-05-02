@@ -22,11 +22,16 @@ export async function POST(req: NextRequest) {
     // Precio en CLP (aprox $10 USD)
     const amount = 8000;
 
+    const host = req.headers.get("host") || "";
+    const protocol = host.startsWith("localhost") ? "http" : "https";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || `${protocol}://${host}`;
+
     const { url } = await createPayment(
       amount,
       email,
       userId,
-      "PostPro - 10 posts profesionales al mes"
+      "PostPro - 10 posts profesionales al mes",
+      baseUrl
     );
 
     return NextResponse.json({ url });
