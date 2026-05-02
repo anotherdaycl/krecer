@@ -89,7 +89,8 @@ export async function createPayment(
   userId: string,
   description: string = "PostPro - Suscripción mensual"
 ): Promise<{ url: string; token: string }> {
-  const commerceOrder = `order_${userId}_${Date.now()}`;
+  // Flow limita commerceOrder a 45 caracteres
+  const commerceOrder = `ord_${userId.slice(0, 8)}_${Date.now().toString().slice(-10)}`;
 
   const result = await flowPost("/payment/create", {
     commerceOrder,
