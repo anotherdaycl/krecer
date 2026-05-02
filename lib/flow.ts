@@ -6,9 +6,9 @@ const FLOW_API_URL = "https://www.flow.cl/api";
 const FLOW_SANDBOX_URL = "https://sandbox.flow.cl/api";
 const TIMEOUT_MS = 30000;
 
-// Usa sandbox en desarrollo, producción en prod
+// FLOW_SANDBOX=true para usar sandbox aunque estemos en producción
 const BASE_URL =
-  process.env.NODE_ENV === "production" ? FLOW_API_URL : FLOW_SANDBOX_URL;
+  process.env.FLOW_SANDBOX === "true" ? FLOW_SANDBOX_URL : FLOW_API_URL;
 
 /**
  * Firma los parámetros según el protocolo de Flow

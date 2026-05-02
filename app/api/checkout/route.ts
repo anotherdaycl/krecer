@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     const baseUrl = (envUrl?.startsWith("http://") || envUrl?.startsWith("https://"))
       ? envUrl
       : `${protocol}://${host}`;
+    console.log("[checkout] baseUrl:", baseUrl, "| FLOW_SANDBOX:", process.env.FLOW_SANDBOX);
 
     const { url } = await createPayment(
       amount,
