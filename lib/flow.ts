@@ -168,8 +168,8 @@ export async function registerCustomer(
 ): Promise<{ url: string; token: string }> {
   const result = await flowPost("/customer/register", {
     customerId,
-    urlRegistration: `${baseUrl}/api/flow-register-webhook`,
-    urlReturn: `${baseUrl}/api/flow-return`,
+    url_registration: `${baseUrl}/api/flow-register-webhook`,
+    url_return: `${baseUrl}/api/flow-return`,
   }) as { url: string; token: string };
   return {
     url: `${result.url}?token=${result.token}`,
