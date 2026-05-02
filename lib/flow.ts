@@ -39,6 +39,8 @@ async function flowPost(
   endpoint: string,
   params: Record<string, string>
 ): Promise<unknown> {
+  if (!FLOW_API_KEY) throw new Error("FLOW_API_KEY not set in environment variables");
+  if (!FLOW_SECRET_KEY) throw new Error("FLOW_SECRET_KEY not set in environment variables");
   const allParams = { ...params, apiKey: FLOW_API_KEY };
   const signature = signParams(allParams);
 
