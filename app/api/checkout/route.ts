@@ -24,7 +24,10 @@ export async function POST(req: NextRequest) {
 
     const host = req.headers.get("host") || "";
     const protocol = host.startsWith("localhost") ? "http" : "https";
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || `${protocol}://${host}`;
+    const envUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+    const baseUrl = (envUrl?.startsWith("http://") || envUrl?.startsWith("https://"))
+      ? envUrl
+      : `${protocol}://${host}`;
 
     const { url } = await createPayment(
       amount,
