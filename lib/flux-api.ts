@@ -1,6 +1,7 @@
 const FAL_API_KEY = process.env.FAL_API_KEY;
-const FAL_API_URL = "https://queue.fal.run/fal-ai/flux/schnell";
-const TIMEOUT_MS = 30000;
+// fal.run (sin "queue.") es el endpoint síncrono — devuelve las imágenes directamente
+const FAL_API_URL = "https://fal.run/fal-ai/flux/schnell";
+const TIMEOUT_MS = 60000;
 
 interface FluxResult {
   images: { url: string; content_type: string }[];
@@ -50,7 +51,7 @@ export async function generateProductImages(
         },
         body: JSON.stringify({
           prompt,
-          image_size: "square",
+          image_size: "square_hd",
           num_inference_steps: 4,
           num_images: 1,
           enable_safety_checker: true,
