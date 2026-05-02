@@ -155,8 +155,8 @@ export default function ResultPage() {
                       {idx === 0
                         ? "Producto"
                         : idx === 1
-                          ? "Lifestyle"
-                          : "Detalle"}
+                          ? "Producto 2"
+                          : "Try-on"}
                     </p>
                   </div>
                 </div>
