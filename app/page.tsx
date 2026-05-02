@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Upload, Sparkles, ArrowRight, Zap, Image, Type } from "lucide-react";
 
 export default function HomePage() {
@@ -9,8 +9,34 @@ export default function HomePage() {
   const [productName, setProductName] = useState("");
   const [category, setCategory] = useState("ropa");
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const LOADING_MESSAGES = [
+    "Analizando tu producto...",
+    "Preparando la IA...",
+    "Generando imagen con fondo profesional...",
+    "Creando segunda variante...",
+    "Generando virtual try-on con modelo...",
+    "Ajustando detalles finales...",
+    "Casi listo...",
+  ];
+
+  useEffect(() => {
+    if (!loading) { setProgress(0); return; }
+    let p = 0;
+    setLoadingMessage(LOADING_MESSAGES[0]);
+    const interval = setInterval(() => {
+      p = Math.min(p + 1.4, 90);
+      setProgress(p);
+      const idx = Math.min(Math.floor((p / 90) * (LOADING_MESSAGES.length - 1)), LOADING_MESSAGES.length - 1);
+      setLoadingMessage(LOADING_MESSAGES[idx]);
+    }, 800);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const handleFile = useCallback((f: File) => {
     if (!f.type.startsWith("image/")) return;
@@ -199,29 +225,35 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Generate button */}
-          <button
-            onClick={handleGenerate}
-            disabled={!file || !productName.trim() || loading}
-            className="mt-6 w-full py-4 bg-surface-900 hover:bg-black disabled:bg-surface-200 disabled:text-stone-400 text-white font-display font-semibold text-lg rounded-xl transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-3"
-          >
-            {loading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Generando tu post...
-              </>
-            ) : (
-              <>
+          {loading ? (
+            <div className="mt-6 space-y-3">
+              <p className="text-center text-sm font-semibold text-stone-700 min-h-[20px]">
+                {loadingMessage}
+              </p>
+              <div className="w-full bg-surface-100 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="bg-brand-500 h-2.5 rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-center text-xs text-stone-400">{Math.round(progress)}%</p>
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={handleGenerate}
+                disabled={!file || !productName.trim()}
+                className="mt-6 w-full py-4 bg-surface-900 hover:bg-black disabled:bg-surface-200 disabled:text-stone-400 text-white font-display font-semibold text-lg rounded-xl transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-3"
+              >
                 <Sparkles className="w-5 h-5" />
                 Generar post profesional
                 <ArrowRight className="w-5 h-5" />
-              </>
-            )}
-          </button>
-
-          <p className="text-center text-xs text-stone-400 mt-3">
-            Gratis — sin registro — ve el resultado antes de pagar
-          </p>
+              </button>
+              <p className="text-center text-xs text-stone-400 mt-3">
+                Gratis — sin registro — ve el resultado antes de pagar
+              </p>
+            </>
+          )}
         </div>
       </section>
 

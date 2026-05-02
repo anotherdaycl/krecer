@@ -31,10 +31,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url });
   } catch (error) {
-    console.error("Flow checkout error:", error);
-    return NextResponse.json(
-      { error: "Failed to create payment" },
-      { status: 500 }
-    );
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Flow checkout error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

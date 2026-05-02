@@ -26,19 +26,19 @@ function detectGender(productName: string): "male" | "female" | "neutral" {
 }
 
 const backgroundMap: Record<string, string> = {
-  ropa: "light gray seamless studio backdrop, professional fashion photography setup",
-  cosmetica: "white marble surface, soft diffused studio lighting, luxury beauty aesthetic",
-  accesorios: "clean off-white seamless background, elegant minimalist studio",
-  comida: "white ceramic surface, bright clean food photography setup, natural light",
-  otro: "pure white seamless background, professional studio lighting",
+  ropa: "soft warm beige fabric backdrop with gentle draped linen texture, subtle shadows, fashion editorial studio lighting",
+  cosmetica: "white marble surface with delicate dried flowers and golden accents, soft warm natural light, luxury skincare aesthetic",
+  accesorios: "ivory textured paper background with a single dried pampas grass stem, warm side lighting casting a soft elegant shadow, high-end boutique feel",
+  comida: "rustic light oak wooden table with scattered herbs and a linen napkin, warm natural window light, artisan food photography",
+  otro: "clean light warm gray seamless backdrop with soft gradient shadow, bright professional studio lighting",
 };
 
 const tryOnBackgroundMap: Record<string, string> = {
-  ropa: "clean light gray studio backdrop, professional fashion shoot",
-  cosmetica: "bright bathroom or vanity setting, clean background",
-  accesorios: "lifestyle studio setting, neutral background",
-  comida: "not applicable",
-  otro: "clean studio backdrop, neutral background",
+  ropa: "bright airy studio with white walls, soft natural light from the side, minimalist fashion shoot",
+  cosmetica: "clean bright vanity or bathroom setting with soft warm light",
+  accesorios: "upscale café or boutique interior with blurred warm bokeh background, lifestyle fashion setting",
+  comida: "bright modern kitchen with light wood tones",
+  otro: "clean neutral studio with soft warm background",
 };
 
 export async function generateProductImages(
