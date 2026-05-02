@@ -15,6 +15,7 @@ import type { User } from "@supabase/supabase-js";
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [credits, setCredits] = useState(0);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [renewalDate, setRenewalDate] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -73,6 +74,7 @@ export default function DashboardPage() {
             return;
           }
           if (sub && sub.status === "active") {
+            setIsSubscribed(true);
             setCredits(sub.credits);
             if (sub.current_period_end) {
               setRenewalDate(new Date(sub.current_period_end).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" }));
@@ -252,10 +254,25 @@ export default function DashboardPage() {
         <p className="text-stone-500 mt-1">
           {credits > 0
             ? `Tienes ${credits} posts disponibles este mes${renewalDate ? ` · Renueva el ${renewalDate}` : ""}`
-            : "Activa tu plan para generar posts profesionales"}
+            : isSubscribed
+              ? `Usaste todos tus posts este mes${renewalDate ? ` · Renuevan el ${renewalDate}` : ""}`
+              : "Activa tu plan para generar posts profesionales"}
         </p>
 
-        {credits <= 0 ? (
+        {credits <= 0 && isSubscribed ? (
+          <div className="mt-8 card p-8 text-center">
+            <div className="w-14 h-14 rounded-full bg-surface-100 flex items-center justify-center mx-auto mb-4">
+              <CreditCard className="w-7 h-7 text-stone-400" />
+            </div>
+            <h2 className="font-display font-semibold text-xl">Posts agotados este mes</h2>
+            <p className="text-stone-500 mt-2">
+              {renewalDate
+                ? `Tus 10 posts se renuevan el ${renewalDate}.`
+                : "Tus posts se renuevan el próximo mes."}
+            </p>
+            <p className="text-sm text-stone-400 mt-1">Tu suscripción sigue activa — no necesitas hacer nada.</p>
+          </div>
+        ) : credits <= 0 ? (
           <div className="mt-8 card p-8 text-center">
             <CreditCard className="w-12 h-12 text-stone-300 mx-auto mb-4" />
             <h2 className="font-display font-semibold text-xl">Activa tu plan</h2>
