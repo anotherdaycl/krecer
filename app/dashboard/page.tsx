@@ -128,6 +128,7 @@ export default function DashboardPage() {
     formData.append("image", file);
     formData.append("productName", productName.trim());
     formData.append("category", category);
+    formData.append("userId", user.id);
 
     try {
       const res = await fetch("/api/generate", {
@@ -144,17 +145,6 @@ export default function DashboardPage() {
 
       if (!data.images || !Array.isArray(data.images) || data.images.length === 0) {
         throw new Error("Respuesta inválida del servidor");
-      }
-
-      // Deduct credit
-      const supabase = createClient();
-      const { error: updateError } = await supabase
-        .from("subscriptions")
-        .update({ credits: credits - 1 })
-        .eq("user_id", user.id);
-
-      if (updateError) {
-        console.error("Error actualizando créditos:", updateError);
       }
 
       setCredits((c: number) => c - 1);
