@@ -48,9 +48,10 @@ export async function POST(req: NextRequest) {
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Generation error:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Generation error:", msg);
     return NextResponse.json(
-      { error: "Failed to generate images" },
+      { error: msg },
       { status: 500 }
     );
   }
