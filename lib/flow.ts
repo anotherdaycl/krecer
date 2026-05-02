@@ -160,6 +160,31 @@ export async function getSubscriptionStatus(
 }
 
 /**
+ * Registra la tarjeta de un cliente para suscripciones
+ */
+export async function registerCustomer(
+  customerId: string,
+  baseUrl: string
+): Promise<{ url: string; token: string }> {
+  const result = await flowPost("/customer/register", {
+    customerId,
+    urlRegistration: `${baseUrl}/api/flow-register-webhook`,
+    urlReturn: `${baseUrl}/api/flow-return`,
+  }) as { url: string; token: string };
+  return {
+    url: `${result.url}?token=${result.token}`,
+    token: result.token,
+  };
+}
+
+/**
+ * Obtiene los datos de un cliente de Flow
+ */
+export async function getCustomer(customerId: string): Promise<any> {
+  return flowGet("/customer/get", { customerId });
+}
+
+/**
  * Cancela una suscripción
  */
 export async function cancelSubscription(
