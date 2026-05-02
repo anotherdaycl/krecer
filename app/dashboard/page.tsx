@@ -27,7 +27,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.getUser().then(({ data }: { data: { user: { id: string; email?: string; user_metadata?: Record<string, string> } | null } }) => {
+    supabase.auth.getUser().then(({ data }) => {
       if (!data.user) {
         window.location.href = "/login";
         return;
