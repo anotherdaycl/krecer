@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const supabase = createServerClient();
 
     // Reusar cliente Flow si ya existe
-    let flowCustomerId: string | null = null;
+    let flowCustomerId = "";
     const { data: existingSub } = await supabase
       .from("subscriptions")
       .select("flow_customer_id")
