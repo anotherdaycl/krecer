@@ -1,5 +1,5 @@
 const FAL_API_KEY = process.env.FAL_API_KEY;
-const FAL_API_URL = "https://fal.run/fal-ai/flux/dev";
+const FAL_API_URL = "https://fal.run/fal-ai/nano-banana-2/edit";
 const TIMEOUT_MS = 60000;
 
 interface FluxResult {
@@ -43,7 +43,8 @@ const tryOnBackgroundMap: Record<string, string> = {
 
 export async function generateProductImages(
   productName: string,
-  category: string = "otro"
+  category: string = "otro",
+  imageUrl?: string
 ): Promise<string[]> {
   if (!FAL_API_KEY) {
     throw new Error("FAL_API_KEY not configured");
@@ -81,6 +82,7 @@ export async function generateProductImages(
         },
         body: JSON.stringify({
           prompt,
+          ...(imageUrl ? { image_url: imageUrl } : {}),
           image_size: "portrait_4_3",
           num_inference_steps: 28,
           guidance_scale: 3.5,

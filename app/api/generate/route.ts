@@ -18,20 +18,25 @@ export async function POST(req: NextRequest) {
     const productName = productNameRaw.trim();
 
     const imageFile = formData.get("image");
-    if (!imageFile) {
+    if (!imageFile || !(imageFile instanceof File)) {
       return NextResponse.json(
         { error: "Image is required" },
         { status: 400 }
       );
     }
 
+    // Convertir imagen a base64 para pasarla al modelo de edición
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const imageDataUrl = `data:${imageFile.type};base64,${base64}`;
+
     const categoryRaw = formData.get("category");
     const category = (typeof categoryRaw === "string" && VALID_CATEGORIES.includes(categoryRaw))
       ? categoryRaw
       : "otro";
 
-    // Generate images with Flux
-    const imageUrls = await generateProductImages(productName, category);
+    // Generate images passing the uploaded product image
+    const imageUrls = await generateProductImages(productName, category, imageDataUrl);
 
     // Generate copy with templates
     const copy = generateCopy(productName, category);
