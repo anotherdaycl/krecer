@@ -26,19 +26,19 @@ export async function generateProductImages(
   }
 
   const styleMap: Record<string, string> = {
-    ropa: "fashion photography, model wearing the garment, clean studio background, soft lighting, editorial style",
-    cosmetica: "beauty product photography, clean white marble surface, soft natural light, luxury skincare aesthetic",
-    accesorios: "product photography, elegant lifestyle setting, warm lighting, minimalist composition",
-    comida: "food photography, appetizing presentation, warm tones, shallow depth of field, rustic wooden surface",
-    otro: "professional product photography, clean white background, studio lighting, commercial quality",
+    ropa: "model wearing the garment, full body shot, neutral gray studio backdrop, even soft-box lighting",
+    cosmetica: "product on white marble surface, flat lay or slight angle, soft diffused lighting, luxury beauty aesthetic",
+    accesorios: "product on clean light gray surface, elegant minimalist studio setup, soft directional lighting",
+    comida: "food on white ceramic plate, clean white background, bright natural lighting, professional food photography",
+    otro: "product centered on seamless white background, professional studio lighting, commercial e-commerce shot",
   };
 
   const style = styleMap[category] || styleMap.otro;
 
   const prompts = [
-    `Professional product photo of ${productName}. Clean white background, studio lighting, e-commerce ready, high resolution, commercial photography, centered composition.`,
-    `${productName} in lifestyle context. ${style}. Professional quality, 4K resolution, Instagram-ready square format.`,
-    `Close-up detail shot of ${productName}. ${style}. Macro photography showing texture and quality, professional lighting.`,
+    `Professional e-commerce product photo of ${productName}. Pure white seamless background, bright studio lighting, perfectly sharp focus, crisp and clear, high resolution, commercial product photography for online store, centered composition, no blur, tack sharp.`,
+    `${productName} styled product photo, ${style}, sharp focus throughout, crisp details, professional online store photography, bright even lighting, no motion blur, high resolution, Instagram-ready.`,
+    `Close-up detail shot of ${productName}, ${style}, extreme sharpness, crisp texture details, professional macro product photography for e-commerce, clean background, studio lighting, ultra clear and in focus.`,
   ];
 
   const results = await Promise.all(

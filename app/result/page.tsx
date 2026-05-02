@@ -129,22 +129,22 @@ export default function ResultPage() {
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="max-w-6xl mx-auto px-6 py-10">
         <h1 className="font-display font-bold text-2xl">Tu post está listo</h1>
         <p className="text-stone-500 mt-1">
           3 imágenes profesionales + copy generado
         </p>
 
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="mt-8 grid grid-cols-1 xl:grid-cols-5 gap-6">
           {/* Images */}
-          <div className="lg:col-span-2">
-            <div className="grid grid-cols-3 gap-3">
+          <div className="xl:col-span-3">
+            <div className="grid grid-cols-3 gap-4">
               {result.images.map((url, idx) => (
                 <div key={idx} className="relative card overflow-hidden group">
                   <img
                     src={url}
                     alt={`Variante ${idx + 1}`}
-                    className="w-full aspect-square object-cover"
+                    className="w-full aspect-[3/4] object-cover"
                   />
                   {/* Watermark overlay for free users */}
                   {!isSubscribed && <div className="watermark" />}
@@ -183,7 +183,7 @@ export default function ResultPage() {
           </div>
 
           {/* Copy panel */}
-          <div className="lg:col-span-1">
+          <div className="xl:col-span-2">
             <div className="card p-6 sticky top-24">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display font-semibold">Copy generado</h2>
