@@ -15,6 +15,8 @@ import type { User } from "@supabase/supabase-js";
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [credits, setCredits] = useState(0);
+  const [renewalDate, setRenewalDate] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [productName, setProductName] = useState("");
@@ -62,16 +64,19 @@ export default function DashboardPage() {
 
       supabase
         .from("subscriptions")
-        .select("credits, status")
+        .select("credits, status, current_period_end")
         .eq("user_id", data.user.id)
         .single()
-        .then(({ data: sub, error }: { data: { credits: number; status: string } | null; error: { code: string; message: string } | null }) => {
+        .then(({ data: sub, error }: { data: { credits: number; status: string; current_period_end: string } | null; error: { code: string; message: string } | null }) => {
           if (error && error.code !== "PGRST116") {
             console.error("Error cargando créditos:", error);
             return;
           }
           if (sub && sub.status === "active") {
             setCredits(sub.credits);
+            if (sub.current_period_end) {
+              setRenewalDate(new Date(sub.current_period_end).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" }));
+            }
           }
         });
     });
@@ -97,8 +102,8 @@ export default function DashboardPage() {
 
         if (sub && sub.status === "active" && sub.credits > 0) {
           setCredits(sub.credits);
+          setPaymentSuccess(true);
           clearInterval(pollInterval);
-          // Clean the URL
           window.history.replaceState({}, "", "/dashboard");
         } else if (attempts >= maxAttempts) {
           clearInterval(pollInterval);
@@ -235,26 +240,41 @@ export default function DashboardPage() {
       </nav>
 
       <div className="max-w-2xl mx-auto px-6 py-10">
+
+        {/* Banner pago exitoso */}
+        {paymentSuccess && (
+          <div className="mb-6 flex items-start gap-3 bg-brand-50 border border-brand-200 rounded-2xl px-5 py-4">
+            <div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-brand-800">¡Pago exitoso! Tu suscripción está activa.</p>
+              <p className="text-sm text-brand-600 mt-0.5">Ya puedes generar tus posts profesionales.</p>
+            </div>
+          </div>
+        )}
+
         <h1 className="font-display font-bold text-2xl">
           Hola, {user.user_metadata?.full_name?.split(" ")[0] || "Usuario"}
         </h1>
         <p className="text-stone-500 mt-1">
           {credits > 0
-            ? `Tienes ${credits} posts disponibles este mes`
-            : "Necesitas una suscripción para generar posts"}
+            ? `Tienes ${credits} posts disponibles este mes${renewalDate ? ` · Renueva el ${renewalDate}` : ""}`
+            : "Activa tu plan para generar posts profesionales"}
         </p>
 
         {credits <= 0 ? (
           <div className="mt-8 card p-8 text-center">
             <CreditCard className="w-12 h-12 text-stone-300 mx-auto mb-4" />
-            <h2 className="font-display font-semibold text-xl">
-              {credits === 0 ? "Sin créditos" : "Activa tu plan"}
-            </h2>
+            <h2 className="font-display font-semibold text-xl">Activa tu plan</h2>
             <p className="text-stone-500 mt-2">
               10 posts profesionales al mes por solo $8.000 CLP
             </p>
             <div className="mt-4 p-4 bg-surface-50 rounded-xl text-left text-sm text-stone-600 space-y-2">
-              <p>✓ 3 fotos editadas por post</p>
+              <p>✓ 3 fotos con IA + fondo profesional</p>
+              <p>✓ Virtual try-on con modelo</p>
               <p>✓ Copy + hashtags generados</p>
               <p>✓ Descarga sin watermark</p>
               <p>✓ Pago seguro con Webpay / tarjeta</p>

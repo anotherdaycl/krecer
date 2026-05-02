@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   Image,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase-browser";
 
 interface GenerationResult {
   images: string[];
@@ -28,6 +29,7 @@ export default function ResultPage() {
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
+    // Cargar resultado desde sessionStorage
     const stored = sessionStorage.getItem("generationResult");
     if (stored) {
       try {
@@ -39,6 +41,22 @@ export default function ResultPage() {
         window.location.href = "/";
       }
     }
+
+    // Verificar suscripción activa en Supabase
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: authData }) => {
+      if (!authData.user) return;
+      supabase
+        .from("subscriptions")
+        .select("status, credits")
+        .eq("user_id", authData.user.id)
+        .single()
+        .then(({ data: sub }) => {
+          if (sub && sub.status === "active" && sub.credits > 0) {
+            setIsSubscribed(true);
+          }
+        });
+    });
   }, []);
 
   const handleCopy = async () => {
@@ -163,23 +181,29 @@ export default function ResultPage() {
               ))}
             </div>
 
-            {/* Download button */}
-            <button
-              onClick={handleDownload}
-              className="mt-4 w-full py-4 rounded-xl font-display font-semibold text-lg transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-3 bg-surface-900 hover:bg-black text-white"
-            >
-              {isSubscribed ? (
-                <>
-                  <Download className="w-5 h-5" />
-                  Descargar ZIP sin watermark
-                </>
-              ) : (
-                <>
+            {/* Download / subscribe button */}
+            {isSubscribed ? (
+              <button
+                onClick={handleDownload}
+                className="mt-4 w-full py-4 rounded-xl font-display font-semibold text-lg transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-3 bg-brand-500 hover:bg-brand-600 text-white"
+              >
+                <Download className="w-5 h-5" />
+                Descargar sin watermark
+              </button>
+            ) : (
+              <div className="mt-4 space-y-3">
+                <a
+                  href="/login"
+                  className="w-full py-4 rounded-xl font-display font-semibold text-lg transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-3 bg-surface-900 hover:bg-black text-white"
+                >
                   <Lock className="w-5 h-5" />
-                  Suscríbete para descargar sin watermark — $10/mes
-                </>
-              )}
-            </button>
+                  Descargar sin watermark — $8.000/mes
+                </a>
+                <p className="text-center text-xs text-stone-400">
+                  Inicia sesión y suscríbete para obtener las 3 imágenes en alta calidad · Cancela cuando quieras
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Copy panel */}

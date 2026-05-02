@@ -14,9 +14,17 @@ export default function HomePage() {
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Si ya está logueado, redirigir al dashboard
+  useEffect(() => {
+    import("@/lib/supabase-browser").then(async ({ createClient }) => {
+      const { data } = await createClient().auth.getUser();
+      if (data.user) window.location.href = "/dashboard";
+    });
+  }, []);
+
   const LOADING_MESSAGES = [
     "Analizando tu producto...",
-    "Preparando la IA...",
+    "Preparando la imagen...",
     "Generando imagen con fondo profesional...",
     "Creando segunda variante...",
     "Generando virtual try-on con modelo...",
