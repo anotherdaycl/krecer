@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCustomer, registerCustomer } from "@/lib/flow";
+import { createCustomer, findCustomerByEmail, registerCustomer } from "@/lib/flow";
 import { createServerClient } from "@/lib/supabase-server";
 
 export async function POST(req: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerClient();
 
-    // Reusar cliente Flow si ya existe
+    // Reusar customer de Flow si ya está guardado en Supabase
     let flowCustomerId = "";
     const { data: existingSub } = await supabase
       .from("subscriptions")
@@ -31,12 +31,23 @@ export async function POST(req: NextRequest) {
     if (existingSub?.flow_customer_id) {
       flowCustomerId = existingSub.flow_customer_id;
     } else {
-      const customer = await createCustomer(
-        email,
-        name || email.split("@")[0],
-        userId
-      ) as { customerId: string };
-      flowCustomerId = customer.customerId;
+      // Intentar crear customer; si ya existe en Flow, buscarlo por email
+      try {
+        const customer = await createCustomer(
+          email,
+          name || email.split("@")[0],
+          userId
+        ) as { customerId: string };
+        flowCustomerId = customer.customerId;
+      } catch {
+        // Customer ya existe en Flow — buscarlo por email
+        const list = await findCustomerByEmail(email);
+        const found = list.data?.find((c) => c.externalId === userId);
+        if (!found) {
+          throw new Error("No se pudo encontrar el cliente en Flow. Contacta soporte.");
+        }
+        flowCustomerId = found.customerId;
+      }
 
       // Guardar el customerId para futuros pagos
       await supabase.from("subscriptions").upsert({
