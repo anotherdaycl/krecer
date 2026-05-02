@@ -100,7 +100,7 @@ export async function createPayment(
     urlConfirmation: `${process.env.NEXT_PUBLIC_APP_URL}/api/flow-webhook`,
     urlReturn: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?payment=success`,
     optional: JSON.stringify({ userId }),
-  });
+  }) as { url: string; token: string };
 
   return {
     url: `${result.url}?token=${result.token}`,
