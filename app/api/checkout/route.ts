@@ -22,13 +22,9 @@ export async function POST(req: NextRequest) {
     // Precio en CLP (aprox $10 USD)
     const amount = 8000;
 
-    const host = req.headers.get("host") || "";
-    const protocol = host.startsWith("localhost") ? "http" : "https";
-    const envUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-    const baseUrl = (envUrl?.startsWith("http://") || envUrl?.startsWith("https://"))
-      ? envUrl
-      : `${protocol}://${host}`;
-    console.log("[checkout] baseUrl:", baseUrl, "| FLOW_SANDBOX:", process.env.FLOW_SANDBOX);
+    const host = (req.headers.get("x-forwarded-host") || req.headers.get("host") || "").trim();
+    const proto = req.headers.get("x-forwarded-proto")?.split(",")[0].trim() || "https";
+    const baseUrl = `${proto}://${host}`;
 
     const { url } = await createPayment(
       amount,
