@@ -26,25 +26,27 @@ export async function POST(req: NextRequest) {
 
     const userId = formData.get("userId");
 
-    // Si viene userId (usuario suscrito), verificar y descontar crédito en el servidor
-    if (userId && typeof userId === "string") {
-      const supabase = createServerClient();
-      const { data: sub, error } = await supabase
-        .from("subscriptions")
-        .select("credits, status")
-        .eq("user_id", userId)
-        .single();
-
-      if (error || !sub || sub.status !== "active" || sub.credits <= 0) {
-        return NextResponse.json({ error: "Sin créditos disponibles" }, { status: 403 });
-      }
-
-      // Descontar crédito antes de generar
-      await supabase
-        .from("subscriptions")
-        .update({ credits: sub.credits - 1 })
-        .eq("user_id", userId);
+    // userId es obligatorio — no se puede generar sin sesión
+    if (!userId || typeof userId !== "string") {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+
+    const supabase = createServerClient();
+    const { data: sub, error } = await supabase
+      .from("subscriptions")
+      .select("credits, status")
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !sub || sub.status !== "active" || sub.credits <= 0) {
+      return NextResponse.json({ error: "Sin créditos disponibles" }, { status: 403 });
+    }
+
+    // Descontar crédito antes de generar
+    await supabase
+      .from("subscriptions")
+      .update({ credits: sub.credits - 1 })
+      .eq("user_id", userId);
 
     // Convertir imagen a base64
     const arrayBuffer = await imageFile.arrayBuffer();
