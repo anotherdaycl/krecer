@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     // Marcar código promo como usado si aplica
     const promoCodeId = opt?.promoCodeId;
     if (promoCodeId) {
-      await supabase.from("promo_code_uses").insert({ promo_code_id: promoCodeId, user_id: userId }).catch(() => {});
+      await supabase.from("promo_code_uses").insert({ promo_code_id: promoCodeId, user_id: userId });
       // Incrementar used_count atómicamente
       const { data: promo } = await supabase.from("promo_codes").select("used_count").eq("id", promoCodeId).single();
       if (promo) {
