@@ -131,10 +131,17 @@ export async function createCustomer(
 }
 
 /**
- * Busca customers por email (para recuperar customerId cuando ya existe)
+ * Obtiene un cliente por externalId (= userId de Supabase)
  */
-export async function findCustomerByEmail(email: string): Promise<{ data: { customerId: string; externalId: string }[] }> {
-  return flowGet("/customer/list", { filter: email, start: "0", limit: "5" }) as any;
+export async function getCustomerByExternalId(externalId: string): Promise<any> {
+  return flowGet("/customer/get", { externalId });
+}
+
+/**
+ * Busca customers por email o texto (fallback)
+ */
+export async function findCustomerByEmail(email: string): Promise<any> {
+  return flowGet("/customer/list", { filter: email, start: "0", limit: "10" });
 }
 
 /**

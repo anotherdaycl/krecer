@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCustomer, findCustomerByEmail, registerCustomer } from "@/lib/flow";
+import { createCustomer, getCustomerByExternalId, findCustomerByEmail, registerCustomer } from "@/lib/flow";
 import { createServerClient } from "@/lib/supabase-server";
 
 export async function POST(req: NextRequest) {
@@ -30,47 +30,56 @@ export async function POST(req: NextRequest) {
 
     if (existingSub?.flow_customer_id) {
       flowCustomerId = existingSub.flow_customer_id;
-      console.log("[checkout] Reusing existing flowCustomerId:", flowCustomerId);
+      console.log("[checkout] Reusing stored flowCustomerId:", flowCustomerId);
     } else {
-      // Intentar crear customer en Flow
-      let createError = "";
+      // 1. Intentar crear customer
       try {
-        const customer = await createCustomer(
-          email,
-          name || email.split("@")[0],
-          userId
-        ) as { customerId: string };
+        const customer = await createCustomer(email, name || email.split("@")[0], userId) as { customerId: string };
         flowCustomerId = customer.customerId;
-        console.log("[checkout] Created new Flow customer:", flowCustomerId);
+        console.log("[checkout] Created new customer:", flowCustomerId);
       } catch (err) {
-        createError = err instanceof Error ? err.message : String(err);
+        const createError = err instanceof Error ? err.message : String(err);
         console.log("[checkout] createCustomer failed:", createError);
-      }
 
-      // Si falló por duplicado, buscar el customer existente por email
-      if (!flowCustomerId && createError.toLowerCase().includes("externalid")) {
-        console.log("[checkout] Searching existing customer by email:", email);
-        const list = await findCustomerByEmail(email);
-        console.log("[checkout] findCustomerByEmail result:", JSON.stringify(list));
-
-        // Intentar match por externalId primero, luego por email
-        const customers: { customerId: string; externalId?: string }[] =
-          (list as any).data || (list as any).items || (Array.isArray(list) ? list : []);
-
-        const found =
-          customers.find((c) => c.externalId === userId) || customers[0];
-
-        if (found?.customerId) {
-          flowCustomerId = found.customerId;
-          console.log("[checkout] Found existing customer:", flowCustomerId);
-        } else {
-          throw new Error(`createCustomer falló: ${createError}`);
+        // Solo recuperar si es error de externalId duplicado
+        if (!createError.toLowerCase().includes("externalid")) {
+          throw new Error(createError);
         }
-      } else if (!flowCustomerId) {
-        throw new Error(`createCustomer falló: ${createError}`);
+
+        // 2. Intentar /customer/get con externalId
+        try {
+          const existing = await getCustomerByExternalId(userId) as { customerId: string };
+          if (existing?.customerId) {
+            flowCustomerId = existing.customerId;
+            console.log("[checkout] Found customer by externalId:", flowCustomerId);
+          }
+        } catch (e) {
+          console.log("[checkout] getCustomerByExternalId failed:", e);
+        }
+
+        // 3. Fallback: buscar por email en la lista
+        if (!flowCustomerId) {
+          try {
+            const list = await findCustomerByEmail(email);
+            console.log("[checkout] customer list:", JSON.stringify(list));
+            const customers: { customerId: string; externalId?: string }[] =
+              list?.data || list?.items || (Array.isArray(list) ? list : []);
+            const found = customers.find((c) => c.externalId === userId) || customers[0];
+            if (found?.customerId) {
+              flowCustomerId = found.customerId;
+              console.log("[checkout] Found customer by email list:", flowCustomerId);
+            }
+          } catch (e) {
+            console.log("[checkout] findCustomerByEmail failed:", e);
+          }
+        }
+
+        if (!flowCustomerId) {
+          throw new Error("No se pudo recuperar el cliente de Flow. Revisa los logs.");
+        }
       }
 
-      // Guardar el customerId para futuros pagos
+      // Guardar para futuros pagos
       await supabase.from("subscriptions").upsert({
         user_id: userId,
         flow_customer_id: flowCustomerId,
@@ -83,7 +92,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error("[checkout] error:", msg);
+    console.error("[checkout] error final:", msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
