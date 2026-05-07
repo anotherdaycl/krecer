@@ -76,13 +76,10 @@ export async function POST(req: NextRequest) {
 
       if (!error && promoCodeId) {
         await supabase.from("promo_code_uses").insert({ promo_code_id: promoCodeId, user_id: userId });
-        await supabase.from("promo_codes").update({ used_count: supabase.rpc ? undefined : undefined }).eq("id", promoCodeId);
-        // Increment used_count
-        await supabase.rpc("increment_promo_used", { promo_id: promoCodeId }).catch(() =>
-          supabase.from("promo_codes").select("used_count").eq("id", promoCodeId).single().then(({ data }) =>
-            data ? supabase.from("promo_codes").update({ used_count: data.used_count + 1 }).eq("id", promoCodeId) : null
-          )
-        );
+        const { data: promo } = await supabase.from("promo_codes").select("used_count").eq("id", promoCodeId).single();
+        if (promo) {
+          await supabase.from("promo_codes").update({ used_count: promo.used_count + 1 }).eq("id", promoCodeId);
+        }
       }
 
       return NextResponse.json({ free: true, url: `${baseUrl}/dashboard?payment=success` });
