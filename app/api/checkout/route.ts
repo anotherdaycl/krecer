@@ -57,20 +57,23 @@ export async function POST(req: NextRequest) {
           console.log("[checkout] getCustomerByExternalId failed:", e);
         }
 
-        // 3. Fallback: buscar por email en la lista
+        // 3. Fallback: buscar por email, luego por userId como filtro
         if (!flowCustomerId) {
-          try {
-            const list = await findCustomerByEmail(email);
-            console.log("[checkout] customer list:", JSON.stringify(list));
-            const customers: { customerId: string; externalId?: string }[] =
-              list?.data || list?.items || (Array.isArray(list) ? list : []);
-            const found = customers.find((c) => c.externalId === userId) || customers[0];
-            if (found?.customerId) {
-              flowCustomerId = found.customerId;
-              console.log("[checkout] Found customer by email list:", flowCustomerId);
+          for (const filterVal of [email, userId]) {
+            try {
+              const list = await findCustomerByEmail(filterVal);
+              console.log(`[checkout] customer list (filter=${filterVal}):`, JSON.stringify(list));
+              const customers: { customerId: string; externalId?: string }[] =
+                list?.data || list?.items || (Array.isArray(list) ? list : []);
+              const found = customers.find((c) => c.externalId === userId) || customers[0];
+              if (found?.customerId) {
+                flowCustomerId = found.customerId;
+                console.log("[checkout] Found customer in list:", flowCustomerId);
+                break;
+              }
+            } catch (e) {
+              console.log(`[checkout] findCustomer(${filterVal}) failed:`, e);
             }
-          } catch (e) {
-            console.log("[checkout] findCustomerByEmail failed:", e);
           }
         }
 
