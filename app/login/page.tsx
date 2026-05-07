@@ -33,7 +33,7 @@ export default function LoginPage() {
           <Sparkles className="w-7 h-7 text-white" />
         </div>
 
-        <h1 className="font-display font-bold text-2xl">Bienvenido a PostPro</h1>
+        <h1 className="font-display font-bold text-2xl">Bienvenido a Kreati</h1>
         <p className="text-stone-500 text-sm mt-2">
           Inicia sesión o crea tu cuenta para acceder a tus posts
         </p>

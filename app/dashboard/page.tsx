@@ -189,7 +189,7 @@ export default function DashboardPage() {
             <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="font-display font-semibold text-lg">PostPro</span>
+            <span className="font-display font-semibold text-lg">Kreati</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-50 rounded-full">

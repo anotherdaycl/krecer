@@ -6,11 +6,9 @@ import {
   Copy,
   Check,
   Sparkles,
-  Lock,
   ArrowLeft,
   Image,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase-browser";
 
 interface GenerationResult {
   images: string[];
@@ -26,10 +24,8 @@ interface GenerationResult {
 export default function ResultPage() {
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [copied, setCopied] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
-    // Cargar resultado desde sessionStorage
     const stored = sessionStorage.getItem("generationResult");
     if (stored) {
       try {
@@ -41,22 +37,6 @@ export default function ResultPage() {
         window.location.href = "/";
       }
     }
-
-    // Verificar suscripción activa en Supabase
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: authData }) => {
-      if (!authData.user) return;
-      supabase
-        .from("subscriptions")
-        .select("status, credits")
-        .eq("user_id", authData.user.id)
-        .single()
-        .then(({ data: sub }) => {
-          if (sub && sub.status === "active" && sub.credits > 0) {
-            setIsSubscribed(true);
-          }
-        });
-    });
   }, []);
 
   const handleCopy = async () => {
@@ -66,47 +46,6 @@ export default function ResultPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = async () => {
-    if (!isSubscribed) {
-      window.location.href = "/login";
-      return;
-    }
-
-    if (!result) return;
-
-    // Dynamic import JSZip
-    const JSZip = (await import("jszip")).default;
-    const zip = new JSZip();
-
-    // Download images and add to zip
-    let failedCount = 0;
-    for (let i = 0; i < result.images.length; i++) {
-      try {
-        const response = await fetch(result.images[i]);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const blob = await response.blob();
-        zip.file(`post-imagen-${i + 1}.jpg`, blob);
-      } catch (e) {
-        console.error(`Failed to download image ${i}`, e);
-        failedCount++;
-      }
-    }
-    if (failedCount > 0) {
-      alert(`No se pudieron descargar ${failedCount} imagen(es). El resto se incluirá en el ZIP.`);
-    }
-
-    // Add copy as text file
-    zip.file("copy-instagram.txt", result.copy.fullPost);
-
-    // Generate and download zip
-    const content = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(content);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "post-profesional.zip";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   if (!result) {
     return (
@@ -135,7 +74,7 @@ export default function ResultPage() {
             <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="font-display font-semibold text-lg">PostPro</span>
+            <span className="font-display font-semibold text-lg">Kreati</span>
           </a>
           <a
             href="/"
@@ -158,66 +97,34 @@ export default function ResultPage() {
           <div className="xl:col-span-3">
             <div className="grid grid-cols-3 gap-4">
               {result.images.map((url, idx) => (
-                <div key={idx} className="relative card overflow-hidden group">
+                <div key={idx} className="relative card overflow-hidden">
                   <img
                     src={url}
                     alt={`Variante ${idx + 1}`}
                     className="w-full aspect-[3/4] object-cover"
                   />
-                  {/* Watermark overlay for free users */}
-                  {!isSubscribed && <div className="watermark" />}
 
-                  {/* Individual download button (subscribers only) */}
-                  {isSubscribed && (
-                    <a
-                      href={url}
-                      download={`post-imagen-${idx + 1}.jpg`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="absolute top-2 right-2 w-8 h-8 bg-white/90 hover:bg-white rounded-lg flex items-center justify-center shadow opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    >
-                      <Download className="w-4 h-4 text-stone-700" />
-                    </a>
-                  )}
+                  {/* Download button — always visible */}
+                  <a
+                    href={url}
+                    download={`post-imagen-${idx + 1}.jpg`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute top-2 right-2 w-8 h-8 bg-white/90 hover:bg-white rounded-lg flex items-center justify-center shadow transition-colors"
+                  >
+                    <Download className="w-4 h-4 text-stone-700" />
+                  </a>
 
                   {/* Label */}
                   <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
                     <p className="text-white text-xs font-medium">
-                      {idx === 0
-                        ? "Producto"
-                        : idx === 1
-                          ? "Producto 2"
-                          : "Try-on"}
+                      {idx === 0 ? "Producto" : idx === 1 ? "Producto 2" : "Try-on"}
                     </p>
                   </div>
                 </div>
               ))}
             </div>
-
-            {/* Download / subscribe button */}
-            {isSubscribed ? (
-              <button
-                onClick={handleDownload}
-                className="mt-4 w-full py-4 rounded-xl font-display font-semibold text-lg transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-3 bg-brand-500 hover:bg-brand-600 text-white"
-              >
-                <Download className="w-5 h-5" />
-                Descargar sin watermark
-              </button>
-            ) : (
-              <div className="mt-4 space-y-3">
-                <a
-                  href="/login"
-                  className="w-full py-4 rounded-xl font-display font-semibold text-lg transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-3 bg-surface-900 hover:bg-black text-white"
-                >
-                  <Lock className="w-5 h-5" />
-                  Descargar sin watermark — $8.000/mes
-                </a>
-                <p className="text-center text-xs text-stone-400">
-                  Inicia sesión y suscríbete para obtener las 3 imágenes en alta calidad · Cancela cuando quieras
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Copy panel */}

@@ -111,7 +111,7 @@ export default function HomePage() {
             <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="font-display font-semibold text-lg">PostPro</span>
+            <span className="font-display font-semibold text-lg">Kreati</span>
           </div>
           <a href="/login" className="text-sm font-medium text-surface-800 hover:text-brand-600 transition">
             Iniciar sesión
@@ -336,7 +336,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-surface-200 py-8 text-center text-sm text-stone-400">
-        <p>PostPro — Posts profesionales con IA para emprendedoras</p>
+        <p>Kreati — Posts profesionales con IA para emprendedoras</p>
       </footer>
     </main>
   );

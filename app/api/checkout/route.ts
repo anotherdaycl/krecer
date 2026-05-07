@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createPayment } from "@/lib/flow";
 
 const CREDIT_PACK_AMOUNT = 9990;
-const CREDIT_PACK_DESCRIPTION = "PostPro - 10 créditos";
+const CREDIT_PACK_DESCRIPTION = "Kreati - 10 créditos";
 
 export async function POST(req: NextRequest) {
   try {

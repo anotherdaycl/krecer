@@ -89,7 +89,7 @@ export async function createPayment(
   amount: number,
   email: string,
   userId: string,
-  description: string = "PostPro - Suscripción mensual",
+  description: string = "Kreati - Suscripción mensual",
   baseUrl?: string
 ): Promise<{ url: string; token: string }> {
   const appUrl = (baseUrl || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
