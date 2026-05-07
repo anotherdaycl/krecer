@@ -342,7 +342,7 @@ export default function DashboardPage() {
               <button
                 onClick={handleGenerate}
                 disabled={!file || !productName.trim()}
-                className="mt-5 w-full py-4 bg-surface-900 hover:bg-black disabled:bg-surface-200 disabled:text-stone-400 text-white font-display font-semibold rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+                className="mt-5 w-full py-4 bg-brand-500 hover:bg-brand-400 disabled:bg-surface-200 disabled:text-stone-400 text-white font-display font-semibold rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-3 shadow-sm"
               >
                 <Sparkles className="w-5 h-5" />
                 Generar post ({credits} restantes)

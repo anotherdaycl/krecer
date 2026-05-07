@@ -5,15 +5,15 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #fafaf9;
-  --bg-dark: #0c0a09;
-  --accent: #22c55e;
+  --bg-primary: #f7fafa;
+  --bg-dark: #0d1414;
+  --accent: #2AABAB;
 }
 
 body {
   font-family: 'Satoshi', system-ui, sans-serif;
   background: var(--bg-primary);
-  color: #1c1917;
+  color: #1a2626;
 }
 
 .font-display {
@@ -21,7 +21,7 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%);
+  background: linear-gradient(135deg, #3dbfbf 0%, #2AABAB 50%, #208888 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -29,21 +29,22 @@ body {
 
 .upload-zone {
   position: relative;
-  border: 2px dashed #d6d3d1;
-  border-radius: 16px;
+  border: 2px dashed #c0d8d8;
+  border-radius: 20px;
   transition: all 0.3s ease;
   cursor: pointer;
+  background: white;
 }
 
 .upload-zone:hover,
 .upload-zone.drag-over {
-  border-color: #22c55e;
-  background: rgba(34, 197, 94, 0.04);
+  border-color: #2AABAB;
+  background: rgba(42, 171, 171, 0.04);
 }
 
 .upload-zone.has-file {
   border-style: solid;
-  border-color: #22c55e;
+  border-color: #2AABAB;
 }
 
 .watermark {
@@ -75,9 +76,9 @@ body {
 .generating-shimmer {
   background: linear-gradient(
     90deg,
-    #f5f5f4 25%,
-    #e7e5e4 50%,
-    #f5f5f4 75%
+    #f0f4f4 25%,
+    #e0e8e8 50%,
+    #f0f4f4 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -88,15 +89,18 @@ body {
   100% { background-position: 200% 0; }
 }
 
+/* Pill-shaped primary button — teal */
 .btn-primary {
-  @apply px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-xl transition-all duration-200 active:scale-95;
+  @apply px-6 py-3 bg-brand-500 hover:bg-brand-400 text-white font-semibold rounded-full transition-all duration-200 active:scale-95 shadow-sm;
 }
 
 .btn-secondary {
-  @apply px-6 py-3 bg-surface-800 hover:bg-surface-900 text-white font-medium rounded-xl transition-all duration-200 active:scale-95;
+  @apply px-6 py-3 bg-surface-800 hover:bg-surface-900 text-white font-semibold rounded-full transition-all duration-200 active:scale-95;
 }
 
+/* Clean elevated card */
 .card {
-  @apply bg-white rounded-2xl border border-surface-200 overflow-hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02);
+  @apply bg-white rounded-3xl overflow-hidden;
+  border: 1px solid rgba(42, 171, 171, 0.1);
+  box-shadow: 0 2px 8px rgba(42, 171, 171, 0.06), 0 8px 24px rgba(0,0,0,0.04);
 }
