@@ -301,19 +301,19 @@ export default function HomePage() {
       {/* Pricing */}
       <section className="py-16 px-6">
         <div className="max-w-md mx-auto card p-8 text-center">
-          <p className="text-sm font-medium text-brand-600">Plan único</p>
+          <p className="text-sm font-medium text-brand-600">Pack de créditos</p>
           <div className="mt-2 font-display">
-            <span className="text-5xl font-bold">$10</span>
-            <span className="text-stone-400 text-lg">/mes</span>
+            <span className="text-5xl font-bold">$9.990</span>
+            <span className="text-stone-400 text-lg"> CLP</span>
           </div>
-          <p className="text-stone-500 mt-2">10 posts profesionales al mes</p>
+          <p className="text-stone-500 mt-2">10 posts profesionales · pago único</p>
           <ul className="mt-6 space-y-3 text-left text-sm text-stone-600">
             {[
-              "3 fotos editadas por post",
+              "3 fotos con IA + fondo profesional",
+              "Virtual try-on con modelo",
               "Copy + hashtags generados",
               "Descarga sin watermark",
-              "Historial de posts",
-              "Cancela cuando quieras",
+              "Pago seguro con Webpay / tarjeta",
             ].map((item) => (
               <li key={item} className="flex items-center gap-2">
                 <div className="w-5 h-5 rounded-full bg-brand-50 flex items-center justify-center flex-shrink-0">
