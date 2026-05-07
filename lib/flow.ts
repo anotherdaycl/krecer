@@ -138,10 +138,11 @@ export async function getCustomerByExternalId(externalId: string): Promise<any> 
 }
 
 /**
- * Busca customers por email o texto (fallback)
+ * Busca customers en Flow (fallback cuando ya existe por externalId)
  */
 export async function findCustomerByEmail(email: string): Promise<any> {
-  return flowGet("/customer/list", { filter: email, start: "0", limit: "10" });
+  // Flow acepta GET con filter como texto libre
+  return flowGet("/customer/list", { filter: email, status: "1", start: "0", limit: "10" });
 }
 
 /**
