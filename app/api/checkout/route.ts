@@ -30,8 +30,10 @@ export async function POST(req: NextRequest) {
 
     if (existingSub?.flow_customer_id) {
       flowCustomerId = existingSub.flow_customer_id;
+      console.log("[checkout] Reusing existing flowCustomerId:", flowCustomerId);
     } else {
-      // Intentar crear customer; si ya existe en Flow, buscarlo por email
+      // Intentar crear customer en Flow
+      let createError = "";
       try {
         const customer = await createCustomer(
           email,
@@ -39,14 +41,33 @@ export async function POST(req: NextRequest) {
           userId
         ) as { customerId: string };
         flowCustomerId = customer.customerId;
-      } catch {
-        // Customer ya existe en Flow — buscarlo por email
+        console.log("[checkout] Created new Flow customer:", flowCustomerId);
+      } catch (err) {
+        createError = err instanceof Error ? err.message : String(err);
+        console.log("[checkout] createCustomer failed:", createError);
+      }
+
+      // Si falló por duplicado, buscar el customer existente por email
+      if (!flowCustomerId && createError.toLowerCase().includes("externalid")) {
+        console.log("[checkout] Searching existing customer by email:", email);
         const list = await findCustomerByEmail(email);
-        const found = list.data?.find((c) => c.externalId === userId);
-        if (!found) {
-          throw new Error("No se pudo encontrar el cliente en Flow. Contacta soporte.");
+        console.log("[checkout] findCustomerByEmail result:", JSON.stringify(list));
+
+        // Intentar match por externalId primero, luego por email
+        const customers: { customerId: string; externalId?: string }[] =
+          (list as any).data || (list as any).items || (Array.isArray(list) ? list : []);
+
+        const found =
+          customers.find((c) => c.externalId === userId) || customers[0];
+
+        if (found?.customerId) {
+          flowCustomerId = found.customerId;
+          console.log("[checkout] Found existing customer:", flowCustomerId);
+        } else {
+          throw new Error(`createCustomer falló: ${createError}`);
         }
-        flowCustomerId = found.customerId;
+      } else if (!flowCustomerId) {
+        throw new Error(`createCustomer falló: ${createError}`);
       }
 
       // Guardar el customerId para futuros pagos
@@ -62,7 +83,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error("Flow checkout error:", msg);
+    console.error("[checkout] error:", msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
