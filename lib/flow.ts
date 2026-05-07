@@ -131,6 +131,14 @@ export async function createCustomer(
 }
 
 /**
+ * Obtiene el estado del registro de tarjeta y el customerId
+ * Flow envía el token al url_registration, luego lo usamos aquí
+ */
+export async function getRegisterStatus(token: string): Promise<any> {
+  return flowGet("/customer/getRegisterStatus", { token });
+}
+
+/**
  * Obtiene un cliente por externalId (= userId de Supabase)
  */
 export async function getCustomerByExternalId(externalId: string): Promise<any> {
@@ -141,8 +149,7 @@ export async function getCustomerByExternalId(externalId: string): Promise<any> 
  * Busca customers en Flow (fallback cuando ya existe por externalId)
  */
 export async function findCustomerByEmail(email: string): Promise<any> {
-  // Flow acepta GET con filter como texto libre
-  return flowGet("/customer/list", { filter: email, status: "1", start: "0", limit: "10" });
+  return flowGet("/customer/list", { filter: email, start: "0", limit: "10" });
 }
 
 /**
