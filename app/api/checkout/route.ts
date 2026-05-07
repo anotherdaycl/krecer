@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCustomer, getCustomerByExternalId, findCustomerByEmail, registerCustomer } from "@/lib/flow";
-import { createServerClient } from "@/lib/supabase-server";
+import { createPayment } from "@/lib/flow";
+
+const CREDIT_PACK_AMOUNT = 9990;
+const CREDIT_PACK_DESCRIPTION = "PostPro - 10 créditos";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, email, name } = await req.json();
+    const { userId, email } = await req.json();
 
     if (!userId || !email) {
       return NextResponse.json({ error: "userId and email required" }, { status: 400 });
@@ -18,84 +20,18 @@ export async function POST(req: NextRequest) {
     const proto = req.headers.get("x-forwarded-proto")?.split(",")[0].trim() || "https";
     const baseUrl = `${proto}://${host}`;
 
-    const supabase = createServerClient();
+    const { url } = await createPayment(
+      CREDIT_PACK_AMOUNT,
+      email,
+      userId,
+      CREDIT_PACK_DESCRIPTION,
+      baseUrl
+    );
 
-    // Reusar customer de Flow si ya está guardado en Supabase
-    let flowCustomerId = "";
-    const { data: existingSub } = await supabase
-      .from("subscriptions")
-      .select("flow_customer_id")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (existingSub?.flow_customer_id) {
-      flowCustomerId = existingSub.flow_customer_id;
-      console.log("[checkout] Reusing stored flowCustomerId:", flowCustomerId);
-    } else {
-      // 1. Intentar crear customer
-      try {
-        const customer = await createCustomer(email, name || email.split("@")[0], userId) as { customerId: string };
-        flowCustomerId = customer.customerId;
-        console.log("[checkout] Created new customer:", flowCustomerId);
-      } catch (err) {
-        const createError = err instanceof Error ? err.message : String(err);
-        console.log("[checkout] createCustomer failed:", createError);
-
-        // Solo recuperar si es error de externalId duplicado
-        if (!createError.toLowerCase().includes("externalid")) {
-          throw new Error(createError);
-        }
-
-        // 2. Intentar /customer/get con externalId
-        try {
-          const existing = await getCustomerByExternalId(userId) as { customerId: string };
-          if (existing?.customerId) {
-            flowCustomerId = existing.customerId;
-            console.log("[checkout] Found customer by externalId:", flowCustomerId);
-          }
-        } catch (e) {
-          console.log("[checkout] getCustomerByExternalId failed:", e);
-        }
-
-        // 3. Fallback: buscar por email, luego por userId como filtro
-        if (!flowCustomerId) {
-          for (const filterVal of [email, userId]) {
-            try {
-              const list = await findCustomerByEmail(filterVal);
-              console.log(`[checkout] customer list (filter=${filterVal}):`, JSON.stringify(list));
-              const customers: { customerId: string; externalId?: string }[] =
-                list?.data || list?.items || (Array.isArray(list) ? list : []);
-              const found = customers.find((c) => c.externalId === userId) || customers[0];
-              if (found?.customerId) {
-                flowCustomerId = found.customerId;
-                console.log("[checkout] Found customer in list:", flowCustomerId);
-                break;
-              }
-            } catch (e) {
-              console.log(`[checkout] findCustomer(${filterVal}) failed:`, e);
-            }
-          }
-        }
-
-        if (!flowCustomerId) {
-          throw new Error("No se pudo recuperar el cliente de Flow. Revisa los logs.");
-        }
-      }
-
-      // Guardar para futuros pagos
-      await supabase.from("subscriptions").upsert({
-        user_id: userId,
-        flow_customer_id: flowCustomerId,
-        status: "pending",
-        credits: 0,
-      });
-    }
-
-    const { url } = await registerCustomer(flowCustomerId, baseUrl);
     return NextResponse.json({ url });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error("[checkout] error final:", msg);
+    console.error("[checkout] error:", msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

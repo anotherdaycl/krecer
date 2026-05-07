@@ -15,8 +15,6 @@ import type { User } from "@supabase/supabase-js";
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [credits, setCredits] = useState(0);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [renewalDate, setRenewalDate] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -25,7 +23,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState("");
-  const [subscribing, setSubscribing] = useState(false);
+  const [buying, setBuying] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -56,34 +54,24 @@ export default function DashboardPage() {
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
+    supabase.auth.getUser().then(({ data: authData }: { data: { user: User | null } }) => {
+      if (!authData.user) {
         window.location.href = "/login";
         return;
       }
-      setUser(data.user);
+      setUser(authData.user);
 
       supabase
         .from("subscriptions")
-        .select("credits, status, current_period_end")
-        .eq("user_id", data.user.id)
-        .single()
-        .then(({ data: sub, error }: { data: { credits: number; status: string; current_period_end: string } | null; error: { code: string; message: string } | null }) => {
-          if (error && error.code !== "PGRST116") {
-            console.error("Error cargando créditos:", error);
-            return;
-          }
-          if (sub && sub.status === "active") {
-            setIsSubscribed(true);
-            setCredits(sub.credits);
-            if (sub.current_period_end) {
-              setRenewalDate(new Date(sub.current_period_end).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" }));
-            }
-          }
+        .select("credits")
+        .eq("user_id", authData.user.id)
+        .maybeSingle()
+        .then(({ data: sub }: { data: { credits: number } | null }) => {
+          if (sub) setCredits(sub.credits ?? 0);
         });
     });
 
-    // Poll for credits after successful payment instead of arbitrary timeout
+    // Poll for credits after payment redirect
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success") {
       let attempts = 0;
@@ -92,15 +80,13 @@ export default function DashboardPage() {
         attempts++;
         const supabaseInner = createClient();
         const { data: authData } = await supabaseInner.auth.getUser();
-        if (!authData.user) {
-          clearInterval(pollInterval);
-          return;
-        }
+        if (!authData.user) { clearInterval(pollInterval); return; }
+
         const { data: sub } = await supabaseInner
           .from("subscriptions")
           .select("credits, status")
           .eq("user_id", authData.user.id)
-          .single();
+          .maybeSingle();
 
         if (sub && sub.status === "active" && sub.credits > 0) {
           setCredits(sub.credits);
@@ -133,10 +119,7 @@ export default function DashboardPage() {
     formData.append("userId", user.id);
 
     try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch("/api/generate", { method: "POST", body: formData });
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -150,30 +133,24 @@ export default function DashboardPage() {
       }
 
       setCredits((c: number) => c - 1);
-
       sessionStorage.setItem("generationResult", JSON.stringify(data));
       window.location.href = "/result";
     } catch (err) {
       console.error(err);
-      const msg = err instanceof Error ? err.message : "Error desconocido";
-      alert(`Error generando: ${msg}. Intenta de nuevo.`);
+      alert(`Error generando: ${err instanceof Error ? err.message : "Error desconocido"}. Intenta de nuevo.`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubscribe = async () => {
+  const handleBuyCredits = async () => {
     if (!user) return;
-    setSubscribing(true);
+    setBuying(true);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          email: user.email,
-          name: user.user_metadata?.full_name || user.email,
-        }),
+        body: JSON.stringify({ userId: user.id, email: user.email }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -183,10 +160,9 @@ export default function DashboardPage() {
       window.location.href = url;
     } catch (err) {
       console.error(err);
-      const msg = err instanceof Error ? err.message : "Error desconocido";
-      alert(`Error al crear el pago: ${msg}`);
+      alert(`Error al crear el pago: ${err instanceof Error ? err.message : "Error desconocido"}`);
     } finally {
-      setSubscribing(false);
+      setBuying(false);
     }
   };
 
@@ -222,10 +198,7 @@ export default function DashboardPage() {
                 {credits} créditos
               </span>
             </div>
-            <button
-              onClick={handleLogout}
-              className="text-stone-400 hover:text-stone-600 transition"
-            >
+            <button onClick={handleLogout} className="text-stone-400 hover:text-stone-600 transition">
               <LogOut className="w-5 h-5" />
             </button>
           </div>
@@ -243,7 +216,7 @@ export default function DashboardPage() {
               </svg>
             </div>
             <div>
-              <p className="font-semibold text-brand-800">¡Pago exitoso! Tu suscripción está activa.</p>
+              <p className="font-semibold text-brand-800">¡Pago exitoso! Tus créditos están disponibles.</p>
               <p className="text-sm text-brand-600 mt-0.5">Ya puedes generar tus posts profesionales.</p>
             </div>
           </div>
@@ -254,31 +227,16 @@ export default function DashboardPage() {
         </h1>
         <p className="text-stone-500 mt-1">
           {credits > 0
-            ? `Tienes ${credits} posts disponibles este mes${renewalDate ? ` · Renueva el ${renewalDate}` : ""}`
-            : isSubscribed
-              ? `Usaste todos tus posts este mes${renewalDate ? ` · Renuevan el ${renewalDate}` : ""}`
-              : "Activa tu plan para generar posts profesionales"}
+            ? `Tienes ${credits} posts disponibles`
+            : "Compra créditos para generar posts profesionales"}
         </p>
 
-        {credits <= 0 && isSubscribed ? (
-          <div className="mt-8 card p-8 text-center">
-            <div className="w-14 h-14 rounded-full bg-surface-100 flex items-center justify-center mx-auto mb-4">
-              <CreditCard className="w-7 h-7 text-stone-400" />
-            </div>
-            <h2 className="font-display font-semibold text-xl">Posts agotados este mes</h2>
-            <p className="text-stone-500 mt-2">
-              {renewalDate
-                ? `Tus 10 posts se renuevan el ${renewalDate}.`
-                : "Tus posts se renuevan el próximo mes."}
-            </p>
-            <p className="text-sm text-stone-400 mt-1">Tu suscripción sigue activa — no necesitas hacer nada.</p>
-          </div>
-        ) : credits <= 0 ? (
+        {credits <= 0 ? (
           <div className="mt-8 card p-8 text-center">
             <CreditCard className="w-12 h-12 text-stone-300 mx-auto mb-4" />
-            <h2 className="font-display font-semibold text-xl">Activa tu plan</h2>
+            <h2 className="font-display font-semibold text-xl">Compra créditos</h2>
             <p className="text-stone-500 mt-2">
-              10 posts profesionales al mes por solo $8.000 CLP
+              10 posts profesionales por solo $9.990 CLP
             </p>
             <div className="mt-4 p-4 bg-surface-50 rounded-xl text-left text-sm text-stone-600 space-y-2">
               <p>✓ 3 fotos con IA + fondo profesional</p>
@@ -288,11 +246,11 @@ export default function DashboardPage() {
               <p>✓ Pago seguro con Webpay / tarjeta</p>
             </div>
             <button
-              onClick={handleSubscribe}
-              disabled={subscribing}
+              onClick={handleBuyCredits}
+              disabled={buying}
               className="btn-primary mt-6 w-full flex items-center justify-center gap-2"
             >
-              {subscribing ? (
+              {buying ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Redirigiendo a Flow...
@@ -300,12 +258,12 @@ export default function DashboardPage() {
               ) : (
                 <>
                   <CreditCard className="w-4 h-4" />
-                  Suscribirme — $8.000/mes
+                  Comprar 10 créditos — $9.990
                 </>
               )}
             </button>
             <p className="text-xs text-stone-400 mt-3">
-              Pago procesado por Flow.cl — Webpay, tarjeta de crédito/débito
+              Pago único procesado por Flow.cl — Webpay, tarjeta de crédito/débito
             </p>
           </div>
         ) : (
@@ -313,10 +271,7 @@ export default function DashboardPage() {
             {/* Upload */}
             <div
               className={`upload-zone p-6 text-center ${dragOver ? "drag-over" : ""} ${preview ? "has-file" : ""}`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={(e) => {
                 e.preventDefault();
@@ -330,23 +285,13 @@ export default function DashboardPage() {
                 ref={fileRef}
                 type="file"
                 accept="image/*"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleFile(f);
-                }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
                 className="hidden"
               />
-
               {preview ? (
                 <div>
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    className="max-h-48 mx-auto rounded-xl object-cover"
-                  />
-                  <p className="mt-2 text-xs text-stone-400">
-                    Click para cambiar
-                  </p>
+                  <img src={preview} alt="Preview" className="max-h-48 mx-auto rounded-xl object-cover" />
+                  <p className="mt-2 text-xs text-stone-400">Click para cambiar</p>
                 </div>
               ) : (
                 <div className="py-6">
@@ -384,9 +329,7 @@ export default function DashboardPage() {
             {/* Generate */}
             {loading ? (
               <div className="mt-5 space-y-3">
-                <p className="text-center text-sm font-semibold text-stone-700 min-h-[20px]">
-                  {loadingMessage}
-                </p>
+                <p className="text-center text-sm font-semibold text-stone-700 min-h-[20px]">{loadingMessage}</p>
                 <div className="w-full bg-surface-100 rounded-full h-2.5 overflow-hidden">
                   <div
                     className="bg-brand-500 h-2.5 rounded-full transition-all duration-700 ease-out"
