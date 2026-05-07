@@ -26,18 +26,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No userId" }, { status: 400 });
     }
 
-    // Crear suscripción al plan
-    await createSubscription(customerId, FLOW_PLAN_ID);
+    // Crear suscripción al plan y usar las fechas reales que devuelve Flow
+    const sub = await createSubscription(customerId, FLOW_PLAN_ID) as {
+      subscriptionId: string;
+      status: number;
+      period_start: string;
+      period_end: string;
+    };
 
-    // Activar suscripción en Supabase con 10 créditos
+    console.log("Flow subscription created:", sub);
+
     const supabase = createServerClient();
     const { error } = await supabase.from("subscriptions").upsert({
       user_id: userId,
       flow_customer_id: customerId,
       status: "active",
       credits: 10,
-      current_period_start: new Date().toISOString(),
-      current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      current_period_start: sub.period_start
+        ? new Date(sub.period_start).toISOString()
+        : new Date().toISOString(),
+      current_period_end: sub.period_end
+        ? new Date(sub.period_end).toISOString()
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
     if (error) {
