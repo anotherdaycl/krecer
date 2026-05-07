@@ -23,12 +23,13 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerClient();
 
-    // Extract userId from optional field
+    // Extract userId and promoCodeId from optional field
     let userId = "";
+    let opt: Record<string, string> = {};
     try {
-      const opt = typeof payment.optional === "string"
+      opt = typeof payment.optional === "string"
         ? JSON.parse(payment.optional)
-        : payment.optional;
+        : payment.optional ?? {};
       userId = opt?.userId || "";
     } catch { /* ignorar */ }
 
@@ -81,6 +82,18 @@ export async function POST(req: NextRequest) {
     if (upsertError) {
       console.error("Flow webhook: error guardando créditos", upsertError);
       return NextResponse.json({ error: "Failed to save credits" }, { status: 500 });
+    }
+
+    // Marcar código promo como usado si aplica
+    const promoCodeId = opt?.promoCodeId;
+    if (promoCodeId) {
+      await supabase.from("promo_code_uses").insert({ promo_code_id: promoCodeId, user_id: userId }).catch(() => {});
+      // Incrementar used_count atómicamente
+      const { data: promo } = await supabase.from("promo_codes").select("used_count").eq("id", promoCodeId).single();
+      if (promo) {
+        await supabase.from("promo_codes").update({ used_count: promo.used_count + 1 }).eq("id", promoCodeId);
+      }
+      console.log("Flow webhook: código promo marcado como usado", promoCodeId);
     }
 
     console.log("Flow webhook: créditos actualizados para userId", userId, "→", newCredits);

@@ -25,6 +25,11 @@ export default function DashboardPage() {
   const [loadingMessage, setLoadingMessage] = useState("");
   const [buying, setBuying] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [showPromo, setShowPromo] = useState(false);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoApplied, setPromoApplied] = useState<{ promoCodeId: string; discountType: string; discountValue: number; finalAmount: number } | null>(null);
+  const [promoError, setPromoError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const LOADING_MESSAGES = [
@@ -143,6 +148,30 @@ export default function DashboardPage() {
     }
   };
 
+  const handleValidatePromo = async () => {
+    if (!promoInput.trim() || !user) return;
+    setPromoLoading(true);
+    setPromoError("");
+    setPromoApplied(null);
+    try {
+      const res = await fetch("/api/validate-promo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: promoInput.trim(), userId: user.id }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setPromoApplied(data);
+      } else {
+        setPromoError(data.error || "Código no válido");
+      }
+    } catch {
+      setPromoError("Error al validar el código");
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
   const handleBuyCredits = async () => {
     if (!user) return;
     setBuying(true);
@@ -150,13 +179,22 @@ export default function DashboardPage() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, email: user.email }),
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          promoCode: promoApplied ? promoInput.trim() : undefined,
+        }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "Checkout failed");
       }
-      const { url } = await res.json();
+      const { url, free } = await res.json();
+      if (free) {
+        setCredits(10);
+        setPaymentSuccess(true);
+        return;
+      }
       window.location.href = url;
     } catch (err) {
       console.error(err);
@@ -242,10 +280,63 @@ export default function DashboardPage() {
               <p>✓ Descarga sin watermark</p>
               <p>✓ Pago seguro con Webpay / tarjeta</p>
             </div>
+            {/* Cupón promocional */}
+            <div className="mt-5">
+              {!showPromo ? (
+                <button
+                  onClick={() => setShowPromo(true)}
+                  className="text-sm text-brand-600 hover:text-brand-500 transition"
+                >
+                  ¿Tienes un código de descuento?
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoInput}
+                      onChange={(e: { target: { value: string } }) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(""); setPromoApplied(null); }}
+                      onKeyDown={(e: { key: string }) => e.key === "Enter" && handleValidatePromo()}
+                      placeholder="CÓDIGO"
+                      className="flex-1 px-4 py-2.5 bg-surface-50 border border-surface-200 rounded-full text-sm font-medium tracking-widest focus:outline-none focus:border-brand-500 transition uppercase"
+                    />
+                    <button
+                      onClick={handleValidatePromo}
+                      disabled={promoLoading || !promoInput.trim()}
+                      className="px-4 py-2.5 bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-white text-sm font-semibold rounded-full transition"
+                    >
+                      {promoLoading ? (
+                        <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      ) : "Aplicar"}
+                    </button>
+                  </div>
+                  {promoError && (
+                    <p className="text-xs text-red-500 pl-1">{promoError}</p>
+                  )}
+                  {promoApplied && (
+                    <div className="flex items-center gap-2 bg-brand-50 border border-brand-200 rounded-xl px-3 py-2">
+                      <svg className="w-4 h-4 text-brand-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <p className="text-sm text-brand-700 font-medium">
+                        {promoApplied.discountType === "percent"
+                          ? `${promoApplied.discountValue}% de descuento aplicado`
+                          : `$${promoApplied.discountValue.toLocaleString("es-CL")} de descuento aplicado`}
+                        {" · "}
+                        <span className="font-bold">
+                          Total: ${promoApplied.finalAmount.toLocaleString("es-CL")} CLP
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <button
               onClick={handleBuyCredits}
               disabled={buying}
-              className="btn-primary mt-6 w-full flex items-center justify-center gap-2"
+              className="btn-primary mt-4 w-full flex items-center justify-center gap-2"
             >
               {buying ? (
                 <>
@@ -255,7 +346,9 @@ export default function DashboardPage() {
               ) : (
                 <>
                   <CreditCard className="w-4 h-4" />
-                  Comprar 10 créditos — $9.990
+                  {promoApplied
+                    ? `Comprar — $${promoApplied.finalAmount.toLocaleString("es-CL")} CLP`
+                    : "Comprar 10 créditos — $9.990"}
                 </>
               )}
             </button>

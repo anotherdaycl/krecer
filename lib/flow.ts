@@ -89,14 +89,16 @@ export async function createPayment(
   amount: number,
   email: string,
   userId: string,
-  description: string = "Kreati - Suscripción mensual",
-  baseUrl?: string
+  description: string = "Kreati - 10 créditos",
+  baseUrl?: string,
+  promoCodeId?: string | null
 ): Promise<{ url: string; token: string }> {
   const appUrl = (baseUrl || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
   if (!appUrl) throw new Error("App URL not configured");
 
-  // Flow limita commerceOrder a 45 caracteres. Codificamos el UUID sin guiones (32 chars) + prefijo = 33 chars total
   const commerceOrder = `u${userId.replace(/-/g, "")}`;
+  const optional: Record<string, string> = { userId };
+  if (promoCodeId) optional.promoCodeId = promoCodeId;
 
   const result = await flowPost("/payment/create", {
     commerceOrder,
@@ -106,7 +108,7 @@ export async function createPayment(
     email,
     urlConfirmation: `${appUrl}/api/flow-webhook`,
     urlReturn: `${appUrl}/api/flow-return`,
-    optional: JSON.stringify({ userId }),
+    optional: JSON.stringify(optional),
   }) as { url: string; token: string };
 
   return {
