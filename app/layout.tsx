@@ -13,6 +13,15 @@ export const metadata: Metadata = {
   title: "Kreati — Posts profesionales en segundos",
   description:
     "Sube la foto de tu producto, recibe 3 imágenes profesionales + copy listo para Instagram.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
+  openGraph: {
+    title: "Kreati — Posts profesionales en segundos",
+    description: "Sube la foto de tu producto, recibe 3 imágenes profesionales + copy listo para Instagram.",
+    images: [{ url: "/icon.png" }],
+  },
 };
 
 export default function RootLayout({

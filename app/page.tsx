@@ -107,11 +107,8 @@ export default function HomePage() {
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-surface-200">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-display font-semibold text-lg">Kreati</span>
+          <div className="flex items-center">
+            <img src="/logo.png" alt="Kreati" className="h-8 w-auto" />
           </div>
           <a href="/login" className="text-sm font-medium text-surface-800 hover:text-brand-600 transition">
             Iniciar sesión
