@@ -148,7 +148,7 @@ export default function ResultPage() {
                   <img
                     src={url}
                     alt={`Variante ${idx + 1}`}
-                    className={`w-full aspect-[3/4] object-cover transition-all duration-500 ${!hasAccess && checked ? "blur-md scale-105" : ""}`}
+                    className="w-full aspect-[3/4] object-cover"
                   />
 
                   {!hasAccess && checked && (
