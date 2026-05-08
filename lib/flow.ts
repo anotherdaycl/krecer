@@ -91,7 +91,8 @@ export async function createPayment(
   userId: string,
   description: string = "Kreati - 10 créditos",
   baseUrl?: string,
-  promoCodeId?: string | null
+  promoCodeId?: string | null,
+  returnTo: "dashboard" | "result" = "dashboard"
 ): Promise<{ url: string; token: string }> {
   const appUrl = (baseUrl || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
   if (!appUrl) throw new Error("App URL not configured");
@@ -107,7 +108,7 @@ export async function createPayment(
     amount: String(amount),
     email,
     urlConfirmation: `${appUrl}/api/flow-webhook`,
-    urlReturn: `${appUrl}/api/flow-return`,
+    urlReturn: `${appUrl}/api/flow-return${returnTo === "result" ? "?from=result" : ""}`,
     optional: JSON.stringify(optional),
   }) as { url: string; token: string };
 

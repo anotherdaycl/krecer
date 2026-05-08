@@ -41,7 +41,7 @@ async function applyPromo(
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, email, promoCode } = await req.json();
+    const { userId, email, promoCode, returnTo } = await req.json();
 
     if (!userId || !email) {
       return NextResponse.json({ error: "userId and email required" }, { status: 400 });
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       ? `Kreati - 10 créditos (${promoCode?.toUpperCase()})`
       : "Kreati - 10 créditos";
 
-    const { url } = await createPayment(amount, email, userId, description, baseUrl, promoCodeId);
+    const { url } = await createPayment(amount, email, userId, description, baseUrl, promoCodeId, returnTo === "result" ? "result" : "dashboard");
 
     return NextResponse.json({ url });
   } catch (error) {

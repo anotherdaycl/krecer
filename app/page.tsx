@@ -8,8 +8,21 @@ export default function HomePage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [productName, setProductName] = useState("");
   const [category, setCategory] = useState("ropa");
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const LOADING_MESSAGES = [
+    "Analizando tu producto...",
+    "Preparando la IA...",
+    "Generando imagen con fondo profesional...",
+    "Creando segunda variante...",
+    "Generando virtual try-on con modelo...",
+    "Ajustando detalles finales...",
+    "Casi listo...",
+  ];
 
   useEffect(() => {
     import("@/lib/supabase-browser").then(async ({ createClient }) => {
@@ -17,6 +30,20 @@ export default function HomePage() {
       if (data.user) window.location.href = "/dashboard";
     });
   }, []);
+
+  useEffect(() => {
+    if (!loading) { setProgress(0); return; }
+    let p = 0;
+    setLoadingMessage(LOADING_MESSAGES[0]);
+    const interval = setInterval(() => {
+      p = Math.min(p + 1.4, 90);
+      setProgress(p);
+      const idx = Math.min(Math.floor((p / 90) * (LOADING_MESSAGES.length - 1)), LOADING_MESSAGES.length - 1);
+      setLoadingMessage(LOADING_MESSAGES[idx]);
+    }, 800);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const handleFile = useCallback((f: File) => {
     if (!f.type.startsWith("image/")) return;
@@ -36,8 +63,28 @@ export default function HomePage() {
     [handleFile]
   );
 
-  const handleGenerate = () => {
-    window.location.href = "/login";
+  const handleGenerate = async () => {
+    if (!file || !productName.trim()) return;
+    setLoading(true);
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("productName", productName.trim());
+    formData.append("category", category);
+    formData.append("isPreview", "true");
+    try {
+      const res = await fetch("/api/generate", { method: "POST", body: formData });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error((errData as { error?: string }).error || "Error al generar");
+      }
+      const data = await res.json();
+      sessionStorage.setItem("generationResult", JSON.stringify({ ...data, isPreview: true }));
+      window.location.href = "/result";
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : "Intenta de nuevo"}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -168,18 +215,30 @@ export default function HomePage() {
             </div>
           </div>
 
-          <button
-            onClick={handleGenerate}
-            disabled={!file || !productName.trim()}
-            className="mt-6 w-full py-4 bg-brand-500 hover:bg-brand-400 disabled:bg-surface-200 disabled:text-stone-400 text-white font-display font-semibold text-lg rounded-full transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-3 shadow-sm"
-          >
-            <Sparkles className="w-5 h-5" />
-            Generar post profesional
-            <ArrowRight className="w-5 h-5" />
-          </button>
-          <p className="text-center text-xs text-stone-400 mt-3">
-            Inicia sesión para generar tus posts profesionales
-          </p>
+          {loading ? (
+            <div className="mt-6 space-y-3">
+              <p className="text-center text-sm font-semibold text-stone-700">{loadingMessage}</p>
+              <div className="w-full bg-surface-100 rounded-full h-2.5 overflow-hidden">
+                <div className="bg-brand-500 h-2.5 rounded-full transition-all duration-700 ease-out" style={{ width: `${progress}%` }} />
+              </div>
+              <p className="text-center text-xs text-stone-400">{Math.round(progress)}%</p>
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={handleGenerate}
+                disabled={!file || !productName.trim()}
+                className="mt-6 w-full py-4 bg-brand-500 hover:bg-brand-400 disabled:bg-surface-200 disabled:text-stone-400 text-white font-display font-semibold text-lg rounded-full transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-3 shadow-sm"
+              >
+                <Sparkles className="w-5 h-5" />
+                Ver cómo queda mi producto
+                <ArrowRight className="w-5 h-5" />
+              </button>
+              <p className="text-center text-xs text-stone-400 mt-3">
+                Gratis — sin registro — ve el resultado antes de pagar
+              </p>
+            </>
+          )}
         </div>
       </section>
 

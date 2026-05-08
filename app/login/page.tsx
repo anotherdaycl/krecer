@@ -13,11 +13,13 @@ export default function LoginPage() {
     setError("");
     try {
       const supabase = createClient();
+      const hasPreview = !!sessionStorage.getItem("generationResult");
+      const redirectTo = hasPreview
+        ? `${window.location.origin}/result`
+        : `${window.location.origin}/dashboard`;
       const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
+        options: { redirectTo },
       });
       if (authError) throw authError;
     } catch (err) {

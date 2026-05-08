@@ -25,28 +25,29 @@ export async function POST(req: NextRequest) {
       ? categoryRaw : "otro";
 
     const userId = formData.get("userId");
+    const isPreview = formData.get("isPreview") === "true";
 
-    // userId es obligatorio — no se puede generar sin sesión
-    if (!userId || typeof userId !== "string") {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    if (!isPreview) {
+      // Generación real: requiere userId y créditos
+      if (!userId || typeof userId !== "string") {
+        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+      }
+      const supabase = createServerClient();
+      const { data: sub, error } = await supabase
+        .from("subscriptions")
+        .select("credits, status")
+        .eq("user_id", userId)
+        .single();
+
+      if (error || !sub || sub.status !== "active" || sub.credits <= 0) {
+        return NextResponse.json({ error: "Sin créditos disponibles" }, { status: 403 });
+      }
+
+      await supabase
+        .from("subscriptions")
+        .update({ credits: sub.credits - 1 })
+        .eq("user_id", userId);
     }
-
-    const supabase = createServerClient();
-    const { data: sub, error } = await supabase
-      .from("subscriptions")
-      .select("credits, status")
-      .eq("user_id", userId)
-      .single();
-
-    if (error || !sub || sub.status !== "active" || sub.credits <= 0) {
-      return NextResponse.json({ error: "Sin créditos disponibles" }, { status: 403 });
-    }
-
-    // Descontar crédito antes de generar
-    await supabase
-      .from("subscriptions")
-      .update({ credits: sub.credits - 1 })
-      .eq("user_id", userId);
 
     // Convertir imagen a base64
     const arrayBuffer = await imageFile.arrayBuffer();
